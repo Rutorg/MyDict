@@ -21,7 +21,8 @@ int _print_t(MyDict<int, double>::Node* tree, int is_left, int offset, int depth
 
 	// Если цвет красный, то ставим его красным.
 	if (tree->isRed) {
-		sprintf(b, "(%03d)", tree->m_key);
+		sprintf(b, "R(%03d)", tree->m_key);
+		width = 6;
 	}
 	else {
 		sprintf(b, "(%03d)", tree->m_key);
@@ -87,9 +88,19 @@ void print_t(MyDict<int, double>::Node* tree)
 
 	_print_t(tree, 0, 0, 0, s);
 
-	//SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
-	for (int i = 0; i < 20; i++)
-		printf("%s\n", s[i]);
+	for (int i = 0; i < 20; i++) {
+		bool isRedChar = false;
+		for (int j = 0; j < 255; j++) {
+			if (s[i][j] == 'R') {
+				SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+			}
+			else if (s[i][j] == ')') {
+
+			}
+			printf("%s\n", s[i][j]);
+
+		}
+	}
 
 }
 
