@@ -11,86 +11,86 @@ using std::cout;
 using std::cin;
 using std::endl;
 
-//secondary function
-void draw_tree_hor2(MyDict<int, double>::Node* tree, int depth, char* path, int right, HANDLE hConsole)
+
+int _print_t(MyDict<int, double>::Node* tree, int is_left, int offset, int depth, char s[20][255])
 {
-	const int space = 2;
+	char b[20];
+	int width = 5;
 
-	// stopping condition
-	if (tree == nullptr)
-		return;
-
-	// increase spacing
-	depth++;
-
-	// start with right node
-	draw_tree_hor2(tree->getChild(false), depth, path, 1, hConsole);
-
-	if (depth > 1)
-	{
-		// set | draw map
-		path[depth - 2] = 0;
-
-		if (right)
-			path[depth - 2] = 1;
-	}
-
-	if (tree->getChild(true))
-		path[depth - 1] = 1;
-
-
-	// print root after spacing
-	printf("\n");
-
-	for (int i = 0; i < depth - 1; i++)
-	{
-		if (i == depth - 2)
-			printf("+");
-		else if (path[i])
-			printf("|");
-		else
-			printf(" ");
-
-		for (int j = 1; j < space; j++)
-			if (i < depth - 2)
-				printf(" ");
-			else
-				printf("-");
-	}
+	if (!tree) return 0;
 
 	// Если цвет красный, то ставим его красным.
 	if (tree->isRed) {
-		SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+		sprintf(b, "(%03d)", tree->m_key);
 	}
-	std::cout << tree->m_key << endl;
-	SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-
-	// vertical spacers below
-	for (int i = 0; i < depth; i++)
-	{
-		if (path[i])
-			printf("|");
-		else
-			printf(" ");
-
-		for (int j = 1; j < space; j++)
-			printf(" ");
+	else {
+		sprintf(b, "(%03d)", tree->m_key);
 	}
+	
 
-	// go to left node
-	draw_tree_hor2(tree->getChild(true), depth, path, 0, hConsole);
+	int left = _print_t(tree->getChild(true), 1, offset, depth + 1, s);
+	int right = _print_t(tree->getChild(false), 0, offset + left + width, depth + 1, s);
+
+#ifdef COMPACT
+	for (int i = 0; i < width; i++)
+		s[depth][offset + left + i] = b[i];
+
+	if (depth && is_left) {
+
+		for (int i = 0; i < width + right; i++)
+			s[depth - 1][offset + left + width / 2 + i] = '-';
+
+		s[depth - 1][offset + left + width / 2] = '.';
+
+	}
+	else if (depth && !is_left) {
+
+		for (int i = 0; i < left + width; i++)
+			s[depth - 1][offset - width / 2 + i] = '-';
+
+		s[depth - 1][offset + left + width / 2] = '.';
+	}
+#else
+	for (int i = 0; i < width; i++)
+		s[2 * depth][offset + left + i] = b[i];
+
+	if (depth && is_left) {
+
+		for (int i = 0; i < width + right; i++)
+			s[2 * depth - 1][offset + left + width / 2 + i] = '-';
+
+		s[2 * depth - 1][offset + left + width / 2] = '+';
+		s[2 * depth - 1][offset + left + width + right + width / 2] = '+';
+
+	}
+	else if (depth && !is_left) {
+
+		for (int i = 0; i < left + width; i++)
+			s[2 * depth - 1][offset - width / 2 + i] = '-';
+
+		s[2 * depth - 1][offset + left + width / 2] = '+';
+		s[2 * depth - 1][offset - width / 2 - 1] = '+';
+	}
+#endif
+
+	return left + width + right;
 }
-//primary fuction
-void draw_tree_hor(MyDict<int, double>::Node* tree)
+
+void print_t(MyDict<int, double>::Node* tree)
 {
 	HANDLE hConsole;
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-	// should check if we don't exceed this somehow..
-	char path[255] = {};
+	char s[20][255];
+	for (int i = 0; i < 20; i++)
+		sprintf(s[i], "%80s", " ");
 
-	//initial depth is 0
-	draw_tree_hor2(tree, 0, path, 0, hConsole);
+	_print_t(tree, 0, 0, 0, s);
+
+	//SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+	for (int i = 0; i < 20; i++)
+		printf("%s\n", s[i]);
+
 }
 
 
@@ -99,7 +99,7 @@ void test1()
 	srand(static_cast<unsigned int>(time(0)));
 	MyDict<int, double> tree;
 
-	std::vector<int> vec(100);
+	std::vector<int> vec(20);
 	for (size_t i = 0; i < vec.size(); i++) {
 		vec[i] = i;
 	}
@@ -111,7 +111,7 @@ void test1()
 	}
 	cout << endl;
 
-	draw_tree_hor(tree.getRootPtr());
+	print_t(tree.getRootPtr());
 	cout << endl;
 }
 
@@ -134,13 +134,13 @@ void test2()
 
 
 
-	draw_tree_hor(tree.getRootPtr());
+	print_t(tree.getRootPtr());
 }
 
 
 int main()
 {
-	test1();
+	//test1();
 	test2();
 
 	return 0;
