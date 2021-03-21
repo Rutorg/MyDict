@@ -93,13 +93,18 @@ void print_t(MyDict<int, double>::Node* tree)
 		for (int j = 0; j < 255; j++) {
 			if (s[i][j] == 'R') {
 				SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+				continue;
 			}
 			else if (s[i][j] == ')') {
-
+				printf("%c", s[i][j]);
+				SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+				continue;
 			}
-			printf("%s\n", s[i][j]);
+
+			printf("%c", s[i][j]);
 
 		}
+		printf("\n");
 	}
 
 }
