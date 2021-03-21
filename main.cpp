@@ -99,7 +99,7 @@ void test1()
 	srand(static_cast<unsigned int>(time(0)));
 	MyDict<int, double> tree;
 
-	std::vector<int> vec(30);
+	std::vector<int> vec(50);
 	for (size_t i = 0; i < vec.size(); i++) {
 		vec[i] = i;
 	}
