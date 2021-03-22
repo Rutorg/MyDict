@@ -5,7 +5,110 @@ template <typename keyT, typename valT>
 class MyDict
 {
 public:
-	struct Node;
+	class Node
+	{
+	public:
+		// Красный по умолчанию.
+		// Потомки - nullptr.
+		// m_key = 0
+		Node(Node* parent) : parent(parent)
+		{
+			m_key = {};
+			m_value = {};
+
+			isRed = true;
+
+			left = nullptr;
+			right = nullptr;
+		}
+
+		// Красный по умолчанию.
+		// Потомки - nullptr.
+		Node(Node* parent, keyT key, valT value) : Node(parent)
+		{
+			m_key = key;
+			m_value = value;
+		}
+
+		bool isKeyLeft(keyT key)
+		{
+			return (key < m_key);
+		}
+
+		bool isLeft()
+		{
+			return parent->isKeyLeft(m_key);
+		}
+
+
+		Node* getParent()
+		{
+			return parent;
+		}
+
+		Node* getChild(bool isLeft)
+		{
+			return ((isLeft) ? (left) : (right));
+		}
+
+		Node* getSibling()
+		{
+			return parent->getChild(!isLeft());
+		}
+
+		Node* getUncle()
+		{
+			return parent->getSibling();
+		}
+
+
+		void setChild(Node* newChild, bool isNewChildLeft)
+		{
+			((isNewChildLeft) ? (left) : (right)) = newChild;
+			if (newChild != nullptr) {
+				newChild->parent = this;
+			}
+		}
+
+
+		void makeRoot(Node*& treeRoot)
+		{
+			treeRoot = this;
+			parent = nullptr;
+			isRed = false;
+		}
+
+
+		void assertRelations()
+		{
+			if (this == nullptr) return;
+			if (parent != nullptr) assert(parent->getChild(isLeft()) == this);
+			if (left != nullptr) assert(left->parent == this);
+			if (right != nullptr) assert(right->parent == this);
+		}
+
+
+
+		// Ключ.
+		keyT m_key;
+
+		// Информация хранящаяся в узле.
+		valT m_value;
+
+		// Красный ли узел?
+		bool isRed;
+
+	private:
+
+		// Указатель на родителя.
+		Node* parent;
+
+		// Указатель левого потомка.
+		Node* left;
+
+		// Указатель на правого потомка.
+		Node* right;
+	};
 
 	// Конструктор по умолчанию.
 	// Результат: будет создан пустой словарь.
@@ -59,8 +162,38 @@ public:
 	}
 
 
-	void erase(int m_value)
+	void erase(keyT key)
 	{
+		Node* targetNode = search(m_root, key);
+		if (targetNode == nullptr) return;
+
+		erase(targetNode);
+	}
+
+
+	void erase(Node* nodeToDelete)
+	{
+		// 1. Удаление при помощи замены узла его приемником - наименьшим элементом
+		// в правом поддереве.
+		// Начинаем с правого ребенка. Идем влево пока узел не станет nullptr.
+		for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
+			// Закончили поиск. Делаем замену.
+			if (curNode->getChild(true) == nullptr) {
+				// Заменяем узел.
+				nodeToDelete->m_key = curNode->m_key;
+				nodeToDelete->m_value = curNode->m_value;
+				// Теперь мы удаляем узел приемник.
+				nodeToDelete = curNode;
+				break;
+			}
+		}
+
+		//========= В данный момент узел должен быть конечным. =========
+
+		// 2. Узел красный, просто убираем его.
+		if (nodeToDelete->isRed) {
+			nodeToDelete->getParent()->setChild(nullptr, nodeToDelete->isLeft());
+		}
 
 	}
 
@@ -90,112 +223,7 @@ public:
 	}
 
 
-	class Node
-	{
-	public:
-		// Красный по умолчанию.
-		// Потомки - nullptr.
-		// m_key = 0
-		Node(Node* parent) : parent(parent)
-		{
-			m_key = {};
-			m_value = {};
-
-			isRed = true;
-
-			left = nullptr;
-			right = nullptr;
-		}
-
-		// Красный по умолчанию.
-		// Потомки - nullptr.
-		Node(Node* parent, keyT key, valT value) : Node(parent)
-		{
-			m_key = key;
-			m_value = value;
-		}
-
-		bool isKeyLeft(keyT key)
-		{
-			return (key < m_key);
-		}
-
-		bool isLeft()
-		{
-			return parent->isKeyLeft(m_key);
-		}
-
-
-		Node* getParent()
-		{
-			return parent;
-		}
-
-		Node* getChild(bool isLeft)
-		{
-			return ( (isLeft) ? (left) : (right) );
-		}
-
-		Node* getSibling()
-		{
-			return parent->getChild(!isLeft());
-		}
-
-		Node* getUncle()
-		{
-			return parent->getSibling();
-		}
-
-
-		void setChild(Node* newChild, bool isNewChildLeft)
-		{
-			( (isNewChildLeft) ? (left) : (right) ) = newChild;
-			if (newChild != nullptr) {
-				newChild->parent = this;
-			}
-		}
-
-		void makeRoot(Node*& treeRoot)
-		{
-			treeRoot = this;
-			parent = nullptr;
-			isRed = false;
-		}
-
-
-		void assertRelations()
-		{
-			if (this == nullptr) return;
-			if (parent != nullptr) assert(parent->getChild(isLeft()) == this);
-			if (left != nullptr) assert(left->parent == this);
-			if (right != nullptr) assert(right->parent == this);
-		}
-
-
-
-		// Ключ.
-		keyT m_key;
-
-		// Информация хранящаяся в узле.
-		valT m_value;
-
-		// Красный ли узел?
-		bool isRed;
-
-	private:
-
-		// Указатель на родителя.
-		Node* parent;
-
-		// Указатель левого потомка.
-		Node* left;
-
-		// Указатель на правого потомка.
-		Node* right;
-	};
-
 private:
-
 	void balance(Node* inserted)
 	{
 		assert(inserted != m_root);
@@ -283,6 +311,7 @@ private:
 		targetChildNode->assertRelations();
 
 	}
+
 
 	// Корень дерева.
 	Node* m_root;
