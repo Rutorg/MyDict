@@ -137,11 +137,50 @@ void test2()
 	draw_tree_hor(tree.getRootPtr());
 }
 
+void test3()
+{
+	MyDict<int, double> tree;
+
+	//tree.insert(10, 0.0);
+	//tree.insert(18, 0.0);
+	//tree.insert(7, 0.0);
+	//tree.insert(15, 0.0);
+	//tree.insert(16, 0.0);
+	//tree.insert(30, 0.0);
+	//tree.insert(25, 0.0);
+	//tree.insert(40, 0.0);
+	//tree.insert(60, 0.0);
+	//tree.insert(2, 0.0);
+	//tree.insert(1, 0.0);
+	//tree.insert(70, 0.0);
+
+	// Много кратное BSTDeletion.
+	//tree.insert(100);
+	//tree.insert(50);
+	//tree.insert(150);
+	//tree.insert(125);
+	//tree.insert(175);
+	//tree.insert(142);
+
+	tree.insert(100);
+	tree.insert(25);
+	tree.insert(200);
+	tree.insert(150);
+
+	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n\n\n";
+
+
+	tree.erase(150);
+	draw_tree_hor(tree.getRootPtr());
+	tree.erase(100);
+}
 
 int main()
 {
-	test1();
-	test2();
+	//test1();
+	//test2();
+	test3();
 
 	return 0;
 }

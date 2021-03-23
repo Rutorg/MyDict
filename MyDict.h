@@ -144,7 +144,7 @@ public:
 	}
 
 
-	void insert(keyT key, valT value)
+	void insert(keyT key, valT value=0.0)
 	{
 		if (m_root == nullptr) {
 			m_root = new Node(nullptr, key, value);
@@ -161,7 +161,10 @@ public:
 		balance(insertingNode);
 	}
 
-
+	// 3 функции:
+	// 1. Находим. (erase)
+	// 2. Переходим к узлу без детей. (BSTDeletion)
+	// 3. Удаляем его. (erase(Node*))
 	void erase(keyT key)
 	{
 		Node* targetNode = search(m_root, key);
@@ -175,32 +178,38 @@ public:
 	{
 		// Необходим переход к узлу без детей.
 
-		// 1.1. У узла два ребенка.
-		if (nodeToDelete->getChild(true) != nullptr && nodeToDelete->getChild(false) != nullptr) {
-
-			// Ищем приемника - наименьший элемент в правом поддереве.
-			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
-			for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
-				// Закончили поиск. Делаем замену.
-				if (curNode->getChild(true) == nullptr) {
-					// Заменяем узел.
-					nodeToDelete->m_key = curNode->m_key;
-					nodeToDelete->m_value = curNode->m_value;
-					// Теперь мы удаляем узел приемник.
-					nodeToDelete = curNode;
-					break;
-				}
-			}
-		}
-
-		// 1.3. Узел не имеет детей.
+		nodeToDelete = BSTDeletion(nodeToDelete);
 
 		//========= В данный момент узел должен быть конечным. =========
 
-		// 2.1. Узел красный, просто убираем его.
-		if (nodeToDelete->isRed) {
+		// 1. Узел красный, просто убираем его.
+		if (nodeToDelete->isRed == true) {
 			nodeToDelete->getParent()->setChild(nullptr, nodeToDelete->isLeft());
+			delete nodeToDelete;
+			return;
 		}
+
+		// 2. Узел черный. Теперь он DB.
+		// DB может изменяться в ходе алгоритма, поэтому нужна отдельная переменная.
+		Node* DB = nodeToDelete;
+
+		// 2.1. DB является корнем. Просто забываем, что это DB.
+		if (DB == m_root) {
+			return;
+		}
+
+
+		// 2.2. Брат узла черный и дети брата тоже черные или nullptr.
+		Node* sibling = DB->getSibling();
+		if ( (sibling->isRed == false) && 
+			( (sibling->getChild(true) == nullptr) || (sibling->getChild(true)->isRed == false) ) &&
+			((sibling->getChild(false) == nullptr) || (sibling->getChild(false)->isRed == false))
+			)
+		{
+			DB->getParent()->isRed == false;
+
+		}
+
 
 	}
 
@@ -242,14 +251,14 @@ private:
 			return;
 		}
 
-		/*======В данный момент и дальше известно, что вставленный и родитель красные=====*/
+		// ====== В данный момент вставленный и родитель красные. =====
 
 		Node* grandParent = parent->getParent();
 		Node* uncle = inserted->getUncle();
 		
-		/* 2. Если дядя красный, то перекрашиваем
-			дядю и родителя в черный, а деда в красный, если дед не корень,
-			если корень - не красим его и закончили. */
+		// 2. Если дядя красный, то перекрашиваем
+		//	дядю и родителя в черный, а деда в красный, если дед не корень,
+		//	если корень - не красим его и закончили.
 		if (uncle != nullptr && uncle->isRed) {
 			uncle->isRed = false;
 			parent->isRed = false;
@@ -316,7 +325,50 @@ private:
 		parentNode->assertRelations();
 		rotatedNode->assertRelations();
 		targetChildNode->assertRelations();
+	}
 
+
+	Node* BSTDeletion(Node* nodeToDelete) 
+	{
+		// Переход к узлу без детей.
+		// Никаких удалений, только замены.
+
+		const bool haveLeft = (nodeToDelete->getChild(true) != nullptr);
+		const bool haveRight = (nodeToDelete->getChild(false) != nullptr);
+
+		// 1. Узел не имеет детей.
+		if (!haveLeft && !haveRight) {
+			return nodeToDelete;
+		}
+
+
+		// 2. У узла два ребенка.
+		if (haveLeft && haveRight) {
+
+			// Ищем приемника - наименьший элемент в правом поддереве.
+			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+			for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
+
+				// Закончили поиск.
+				if (curNode->getChild(true) == nullptr) {
+					// Заменяем удаляемый узел на узел приемник.
+					nodeToDelete->m_key = curNode->m_key;
+					nodeToDelete->m_value = curNode->m_value;
+
+					// Теперь мы удаляем узел приемник.
+					return BSTDeletion(curNode);
+				}
+			}
+		}
+
+		// 3. Узел имеет одного ребенка. Причем haveLeft показывает какой.
+
+		// Заменяем удаляемый узел на единственного ребенка.
+		Node* children = nodeToDelete->getChild(haveLeft);
+		nodeToDelete->m_key = children->m_key;
+		nodeToDelete->m_value = children->m_value;
+
+		return BSTDeletion(children);
 	}
 
 
