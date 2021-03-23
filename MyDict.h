@@ -173,24 +173,31 @@ public:
 
 	void erase(Node* nodeToDelete)
 	{
-		// 1. Удаление при помощи замены узла его приемником - наименьшим элементом
-		// в правом поддереве.
-		// Начинаем с правого ребенка. Идем влево пока узел не станет nullptr.
-		for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
-			// Закончили поиск. Делаем замену.
-			if (curNode->getChild(true) == nullptr) {
-				// Заменяем узел.
-				nodeToDelete->m_key = curNode->m_key;
-				nodeToDelete->m_value = curNode->m_value;
-				// Теперь мы удаляем узел приемник.
-				nodeToDelete = curNode;
-				break;
+		// Необходим переход к узлу без детей.
+
+		// 1.1. У узла два ребенка.
+		if (nodeToDelete->getChild(true) != nullptr && nodeToDelete->getChild(false) != nullptr) {
+
+			// Ищем приемника - наименьший элемент в правом поддереве.
+			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+			for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
+				// Закончили поиск. Делаем замену.
+				if (curNode->getChild(true) == nullptr) {
+					// Заменяем узел.
+					nodeToDelete->m_key = curNode->m_key;
+					nodeToDelete->m_value = curNode->m_value;
+					// Теперь мы удаляем узел приемник.
+					nodeToDelete = curNode;
+					break;
+				}
 			}
 		}
 
+		// 1.3. Узел не имеет детей.
+
 		//========= В данный момент узел должен быть конечным. =========
 
-		// 2. Узел красный, просто убираем его.
+		// 2.1. Узел красный, просто убираем его.
 		if (nodeToDelete->isRed) {
 			nodeToDelete->getParent()->setChild(nullptr, nodeToDelete->isLeft());
 		}
