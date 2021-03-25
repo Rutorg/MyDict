@@ -5,12 +5,15 @@ template <typename keyT, typename valT>
 class MyDict
 {
 public:
+	class const_iterator;
+	// У словаря нет не констатного итератора.
+	using iterator = const_iterator;
+
 	class Node
 	{
 	public:
 		// Красный по умолчанию.
 		// Потомки - nullptr.
-		// m_key = 0
 		Node(Node* parent) : parent(parent)
 		{
 			m_key = {};
@@ -24,12 +27,24 @@ public:
 
 		// Красный по умолчанию.
 		// Потомки - nullptr.
-		Node(Node* parent, keyT key, valT value=0.0) : Node(parent)
+		Node(Node* parent, keyT key, valT value) : Node(parent)
 		{
 			m_key = key;
 			m_value = value;
 		}
 
+		Node(const Node& other)
+		{
+			// Копируем значения.
+			m_key = other.m_key;
+			m_value = other.m_value;
+			isRed = other.isRed;
+
+			// Связи оставляем nullptr.
+			parent = nullptr;
+			left = nullptr;
+			right = nullptr;
+		}
 
 		// Позаботиться о связи родителя.
 		~Node()
@@ -59,8 +74,8 @@ public:
 
 		bool isLeft() const
 		{
-			// Для корня должно быть возвращено истина.
 			// Только у корня parent == nullptr.
+			// Для корня должно быть возвращено истина.
 			if (parent == nullptr) {
 				return true;
 			}
@@ -126,7 +141,6 @@ public:
 		}
 
 
-
 		// Ключ.
 		keyT m_key;
 
@@ -155,6 +169,33 @@ public:
 		m_root = nullptr;
 	}
 
+	// Конструктор копирования.
+	MyDict(const MyDict& other)
+	{
+		// Копируем все характеристики, кроме связей.
+		m_root = new Node(*(other.m_root));
+
+		// Обрабатываем левого ребенка.
+		recCopy(m_root, other.m_root, true);
+		// Обрабатываем правого ребенка.
+		recCopy(m_root, other.m_root, false);
+	}
+
+	// Оператор присваивания.
+	MyDict& operator=(const MyDict& other)
+	{
+		clear();
+
+		// Копируем все характеристики, кроме связей.
+		m_root = new Node(*(other.m_root));
+
+		// Обрабатываем левого ребенка.
+		recCopy(m_root, other.m_root, true);
+		// Обрабатываем правого ребенка.
+		recCopy(m_root, other.m_root, false);
+
+		return *this;
+	}
 
 	// Деструктор.
 	// Если в списке хранились указатели, то удаляются только эти указатели, не информация
@@ -165,24 +206,34 @@ public:
 		clear();
 	}
 
+	//Вывести как красно-черное дерево.
+	void printAsRBTree()
+	{
+		Node* tree = m_root;
+
+		HANDLE hConsole;
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+		// should check if we don't exceed this somehow..
+		char path[255] = {};
+
+		//initial depth is 0
+		draw_tree_hor2(tree, 0, path, 0, hConsole);
+	}
 
 	// Очистить.
-	// Если в списке хранились указатели, то удаляются только эти указатели, не информация
-	// на которую они указывают.
-	// Результат: будут удалены все узлы в списке, кроме барьерного.
+	// Результат: будут удалены все узлы в дереве.
 	void clear()
 	{
+		if (m_root == nullptr) {
+			return;
+		}
 
+		recClean(m_root);
+		m_root = nullptr;
 	}
 	
-
-	Node* getRootPtr()
-	{
-		return m_root;
-	}
-
-
-	void insert(keyT key, valT value=0.0)
+	void insert(keyT key, valT value)
 	{
 		if (m_root == nullptr) {
 			m_root = new Node(nullptr, key, value);
@@ -199,37 +250,30 @@ public:
 		balance(insertingNode);
 	}
 
-	// 3 функции:
-	// 1. Находим. (erase)
-	// 2. Переходим к узлу без детей. (BSTDeletion)
-	// 3. Удаляем его. (erase(Node*))
 	void erase(keyT key)
 	{
+		// 3 функции:
+		// 1. Находим. (erase)
+		// 2. Переходим к узлу без детей. (BSTDeletion)
+		// 3. Удаляем его. (erase(Node*))
 		Node* targetNode = search(m_root, key);
 		if (targetNode == nullptr) return;
 
 		erase(targetNode, key);
 	}
 
-
-	void erase(Node* nodeToDelete, const keyT& deletedKey)
+	iterator find(keyT key)
 	{
-		// Необходим переход к узлу без детей.
+		Node* node = search(m_root, key);
+		return iterator(node);
+	}
 
-		nodeToDelete = BSTDeletion(nodeToDelete);
+	const valT& operator[](keyT key)
+	{
+		iterator it = find(key);
+		assert(it != end());
 
-		//========= В данный момент узел должен быть конечным. =========
-
-		// 1. Удаляемый узел красный, просто убираем его.
-		if (nodeToDelete->isRed == true) {
-			Node* parent = nodeToDelete->getParent();
-			delete nodeToDelete;
-			return;
-		}
-
-		// 2. Удаляемый узел черный. Теперь он DB.
-		balanceDB(nodeToDelete, deletedKey);
-
+		return it.node->m_value;
 	}
 
 	// Возвращает указатель на узел с m_value. Если nullptr, то значит нет такого узла.
@@ -241,20 +285,6 @@ public:
 		}
 
 		return search( startNode->getChild(startNode->isKeyLeft(key)), key);
-	}
-
-	Node* searchParent(Node* startNode, keyT key, bool& isChildLeft)
-	{
-		isChildLeft = startNode->isKeyLeft(key);
-		Node* nextNode = startNode->getChild(isChildLeft);
-
-		// Следующий узел - искомый.
-		if (nextNode == nullptr || startNode->m_key == key) {
-			return startNode;
-		}
-
-
-		return searchParent(nextNode, key, isChildLeft);
 	}
 
 
@@ -293,6 +323,34 @@ public:
 			}
 		}
 
+		const_iterator& operator--()
+		{
+			// Если есть левый ребенок: ищем предшественника.
+			// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через правую связь.
+
+			if (node->getChild(false) != nullptr) {
+				// Ищем предшественника - наибольший элемент в левом поддереве.
+				// Начинаем с левого ребенка. Идем право пока правый узел не станет nullptr.
+				for (const Node* curNode = node->getChild(true); ; curNode = curNode->getChild(false)) {
+
+					// Закончили поиск.
+					if (curNode->getChild(false) == nullptr) {
+						node = curNode;
+						return *this;
+					}
+				}
+			}
+
+			for (const Node* curNode = node; ; curNode = curNode->getParent()) {
+				// Найден узел, у которого переход к родителю будет через правую связь.
+				if ( !(curNode->isLeft()) ) {
+					// Делаем в последний раз переход и закончили. Причем в node запись.
+					node = curNode->getParent();
+					return *this;
+				}
+			}
+		}
+
 		bool operator==(const_iterator other)
 		{
 			return (node == other.node);
@@ -303,77 +361,79 @@ public:
 			return !(*this == other);
 		}
 
-		const Node* operator*()
+		std::pair<keyT, valT> operator*()
 		{
-			return node;
+			return std::pair<keyT, valT>(node->m_key, node->m_value);
 		}
 
 	private:
-
+		friend class MyDict;
 		const Node* node;
 	};
 
-	class iterator
-	{
-	public:
-		iterator(Node* node) : node(node)
-		{
-		}
-
-		iterator& operator++()
-		{
-			// Если есть правый ребенок: ищем приемника.
-			// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через левую связь.
-
-			if (node->getChild(false) != nullptr) {
-				// Ищем приемника - наименьший элемент в правом поддереве.
-				// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
-				for (Node* curNode = node->getChild(false); ; curNode = curNode->getChild(true)) {
-
-					// Закончили поиск.
-					if (curNode->getChild(true) == nullptr) {
-						node = curNode;
-						return *this;
-					}
-				}
-			}
-
-			for (Node* curNode = node; ; curNode = curNode->getParent()) {
-				// Найден узел, у которого переход к родителю будет через левую связь.
-				if (curNode->isLeft()) {
-					// Делаем в последний раз переход и закончили. Причем в node запись.
-					node = curNode->getParent();
-					return *this;
-				}
-			}
-		}
-
-		bool operator==(iterator other)
-		{
-			return (node == other.node);
-		}
-
-		bool operator!=(iterator other)
-		{
-			return !(*this == other);
-		}
-
-		Node* operator*()
-		{
-			return node;
-		}
-
-	private:
-
-		Node* node;
-	};
-
-	// У словаря нет не констатного итератора.
-	//using iterator = const_iterator;
-
+	//class iterator
+	//{
+	//public:
+	//	iterator(Node* node) : node(node)
+	//	{
+	//	}
+	//
+	//	iterator& operator++()
+	//	{
+	//		// Если есть правый ребенок: ищем приемника.
+	//		// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через левую связь.
+	//
+	//		if (node->getChild(false) != nullptr) {
+	//			// Ищем приемника - наименьший элемент в правом поддереве.
+	//			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+	//			for (Node* curNode = node->getChild(false); ; curNode = curNode->getChild(true)) {
+	//
+	//				// Закончили поиск.
+	//				if (curNode->getChild(true) == nullptr) {
+	//					node = curNode;
+	//					return *this;
+	//				}
+	//			}
+	//		}
+	//
+	//		for (Node* curNode = node; ; curNode = curNode->getParent()) {
+	//			// Найден узел, у которого переход к родителю будет через левую связь.
+	//			if (curNode->isLeft()) {
+	//				// Делаем в последний раз переход и закончили. Причем в node запись.
+	//				node = curNode->getParent();
+	//				return *this;
+	//			}
+	//		}
+	//	}
+	//
+	//	bool operator==(iterator other)
+	//	{
+	//		return (node == other.node);
+	//	}
+	//
+	//	bool operator!=(iterator other)
+	//	{
+	//		return !(*this == other);
+	//	}
+	//
+	//	Node* operator*()
+	//	{
+	//		return node;
+	//	}
+	//
+	//private:
+	//
+	//	Node* node;
+	//};
 
 	iterator begin()
 	{
+		if (m_root == nullptr)
+		{
+			iterator it(nullptr);
+			return it;
+		}
+
 		// Двигаемся влево пока левый ребенок не nullptr.
 		for (Node* curNode = m_root; ; curNode = curNode->getChild(true)) {
 			// Закончили поиск.
@@ -384,6 +444,7 @@ public:
 		}
 	}
 
+
 	iterator end()
 	{
 		iterator it(nullptr);
@@ -391,6 +452,136 @@ public:
 	}
 
 private:
+
+	//Для printAsRBTree.
+	void draw_tree_hor2(MyDict<keyT, valT>::Node* tree, int depth, char* path, int right, HANDLE hConsole)
+	{
+		const int space = 2;
+
+		// stopping condition
+		if (tree == nullptr)
+			return;
+
+		// increase spacing
+		depth++;
+
+		// start with right node
+		draw_tree_hor2(tree->getChild(false), depth, path, 1, hConsole);
+
+		if (depth > 1)
+		{
+			// set | draw map
+			path[depth - 2] = 0;
+
+			if (right)
+				path[depth - 2] = 1;
+		}
+
+		if (tree->getChild(true))
+			path[depth - 1] = 1;
+
+
+		// print root after spacing
+		printf("\n");
+
+		for (int i = 0; i < depth - 1; i++)
+		{
+			if (i == depth - 2)
+				printf("+");
+			else if (path[i])
+				printf("|");
+			else
+				printf(" ");
+
+			for (int j = 1; j < space; j++)
+				if (i < depth - 2)
+					printf(" ");
+				else
+					printf("-");
+		}
+
+		// Если цвет красный, то ставим его красным.
+		if (tree->isRed) {
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+		}
+		std::cout << tree->m_key << std::endl;
+		SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+
+		// vertical spacers below
+		for (int i = 0; i < depth; i++)
+		{
+			if (path[i])
+				printf("|");
+			else
+				printf(" ");
+
+			for (int j = 1; j < space; j++)
+				printf(" ");
+		}
+
+		// go to left node
+		draw_tree_hor2(tree->getChild(true), depth, path, 0, hConsole);
+	}
+
+	void recClean(Node* root) {
+		if (root->getChild(true) != nullptr) recClean(root->getChild(true));
+		if (root->getChild(false) != nullptr) recClean(root->getChild(false));
+		delete root;
+	}
+
+	void recCopy(Node* parent, const Node* otherParent, bool isLeftChild)
+	{
+		// ==== Копируем ребенка. ====
+		const Node* otherChild = otherParent->getChild(isLeftChild);
+
+		// Если ребенок nullptr, то закончили.
+		if (otherChild == nullptr) return;
+
+		// Копируем все характеристики, кроме связей.
+		Node* child = new Node(*otherChild);
+		parent->setChild(child, isLeftChild);
+		// ==================================
+
+		// Обрабатываем левого ребенка. 
+		recCopy(child, otherChild, true);
+
+		// Обрабатываем правого ребенка.
+		recCopy(child, otherChild, false);
+	}
+
+	void erase(Node* nodeToDelete, const keyT& deletedKey)
+	{
+		// Необходим переход к узлу без детей.
+
+		nodeToDelete = BSTDeletion(nodeToDelete);
+
+		//========= В данный момент узел должен быть конечным. =========
+
+		// 1. Удаляемый узел красный, просто убираем его.
+		if (nodeToDelete->isRed == true) {
+			delete nodeToDelete;
+			return;
+		}
+
+		// 2. Удаляемый узел черный. Теперь он DB.
+		balanceDB(nodeToDelete, deletedKey);
+
+	}
+
+	Node* searchParent(Node* startNode, keyT key, bool& isChildLeft)
+	{
+		isChildLeft = startNode->isKeyLeft(key);
+		Node* nextNode = startNode->getChild(isChildLeft);
+
+		// Следующий узел - искомый.
+		if (nextNode == nullptr || startNode->m_key == key) {
+			return startNode;
+		}
+
+
+		return searchParent(nextNode, key, isChildLeft);
+	}
+
 	void balance(Node* inserted)
 	{
 		assert(inserted != m_root);
@@ -446,6 +637,49 @@ private:
 
 		// Перекрашивание. Дед уходит вниз, должен стать красным.
 		grandParent->isRed = true;
+	}
+
+	Node* BSTDeletion(Node* nodeToDelete) 
+	{
+		// Переход к узлу без детей.
+		// Никаких удалений, только замены.
+
+		const bool haveLeft = (nodeToDelete->getChild(true) != nullptr);
+		const bool haveRight = (nodeToDelete->getChild(false) != nullptr);
+
+		// 1. Узел не имеет детей.
+		if (!haveLeft && !haveRight) {
+			return nodeToDelete;
+		}
+
+
+		// 2. У узла два ребенка.
+		if (haveLeft && haveRight) {
+
+			// Ищем приемника - наименьший элемент в правом поддереве.
+			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+			for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
+
+				// Закончили поиск.
+				if (curNode->getChild(true) == nullptr) {
+					// Заменяем удаляемый узел на узел приемник.
+					nodeToDelete->m_key = curNode->m_key;
+					nodeToDelete->m_value = curNode->m_value;
+
+					// Теперь мы удаляем узел приемник.
+					return BSTDeletion(curNode);
+				}
+			}
+		}
+
+		// 3. Узел имеет одного ребенка. Причем haveLeft показывает какой.
+
+		// Заменяем удаляемый узел на единственного ребенка.
+		Node* children = nodeToDelete->getChild(haveLeft);
+		nodeToDelete->m_key = children->m_key;
+		nodeToDelete->m_value = children->m_value;
+
+		return BSTDeletion(children);
 	}
 
 	void balanceDB(Node* DB, const keyT& deletedKey) 
@@ -556,7 +790,6 @@ private:
 		}
 	}
 
-
 	// Занимается всеми связями (parent, left, right).
 	void rotate(Node* rotatedNode, bool isLeftRotation) 
 	{
@@ -586,52 +819,6 @@ private:
 		targetChildNode->assertRelations();
 	}
 
-
-	Node* BSTDeletion(Node* nodeToDelete) 
-	{
-		// Переход к узлу без детей.
-		// Никаких удалений, только замены.
-
-		const bool haveLeft = (nodeToDelete->getChild(true) != nullptr);
-		const bool haveRight = (nodeToDelete->getChild(false) != nullptr);
-
-		// 1. Узел не имеет детей.
-		if (!haveLeft && !haveRight) {
-			return nodeToDelete;
-		}
-
-
-		// 2. У узла два ребенка.
-		if (haveLeft && haveRight) {
-
-			// Ищем приемника - наименьший элемент в правом поддереве.
-			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
-			for (Node* curNode = nodeToDelete->getChild(false); ; curNode = curNode->getChild(true)) {
-
-				// Закончили поиск.
-				if (curNode->getChild(true) == nullptr) {
-					// Заменяем удаляемый узел на узел приемник.
-					nodeToDelete->m_key = curNode->m_key;
-					nodeToDelete->m_value = curNode->m_value;
-
-					// Теперь мы удаляем узел приемник.
-					return BSTDeletion(curNode);
-				}
-			}
-		}
-
-		// 3. Узел имеет одного ребенка. Причем haveLeft показывает какой.
-
-		// Заменяем удаляемый узел на единственного ребенка.
-		Node* children = nodeToDelete->getChild(haveLeft);
-		nodeToDelete->m_key = children->m_key;
-		nodeToDelete->m_value = children->m_value;
-
-		return BSTDeletion(children);
-	}
-
-
-	// Корень дерева. isLeft() должная возвращать истину
-	// для корректной работы итератора.
+	// Корень дерева.
 	Node* m_root;
 };

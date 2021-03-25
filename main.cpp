@@ -5,95 +5,16 @@
 #include <random>
 
 #include "MyDict.h"
+#include <map>
 
 
 using std::cout;
 using std::cin;
 using std::endl;
 
-//secondary function
-void draw_tree_hor2(MyDict<int, double>::Node* tree, int depth, char* path, int right, HANDLE hConsole)
-{
-	const int space = 2;
-
-	// stopping condition
-	if (tree == nullptr)
-		return;
-
-	// increase spacing
-	depth++;
-
-	// start with right node
-	draw_tree_hor2(tree->getChild(false), depth, path, 1, hConsole);
-
-	if (depth > 1)
-	{
-		// set | draw map
-		path[depth - 2] = 0;
-
-		if (right)
-			path[depth - 2] = 1;
-	}
-
-	if (tree->getChild(true))
-		path[depth - 1] = 1;
 
 
-	// print root after spacing
-	printf("\n");
-
-	for (int i = 0; i < depth - 1; i++)
-	{
-		if (i == depth - 2)
-			printf("+");
-		else if (path[i])
-			printf("|");
-		else
-			printf(" ");
-
-		for (int j = 1; j < space; j++)
-			if (i < depth - 2)
-				printf(" ");
-			else
-				printf("-");
-	}
-
-	// Если цвет красный, то ставим его красным.
-	if (tree->isRed) {
-		SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
-	}
-	std::cout << tree->m_key << endl;
-	SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-
-	// vertical spacers below
-	for (int i = 0; i < depth; i++)
-	{
-		if (path[i])
-			printf("|");
-		else
-			printf(" ");
-
-		for (int j = 1; j < space; j++)
-			printf(" ");
-	}
-
-	// go to left node
-	draw_tree_hor2(tree->getChild(true), depth, path, 0, hConsole);
-}
-//primary fuction
-void draw_tree_hor(MyDict<int, double>::Node* tree)
-{
-	HANDLE hConsole;
-	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	// should check if we don't exceed this somehow..
-	char path[255] = {};
-
-	//initial depth is 0
-	draw_tree_hor2(tree, 0, path, 0, hConsole);
-}
-
-void test1()
+/*void test1()
 {
 	//static_cast<unsigned int>(time(0))
 	srand(200);
@@ -107,16 +28,16 @@ void test1()
 
 	for (auto& element : vec) {
 		cout << element << ' ';
-		tree.insert(element);
+		tree.insert(element, 0.0);
 	}
 	cout << endl;
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 	tree.erase(10);
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 }
@@ -140,7 +61,7 @@ void test2()
 
 
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 }
 
 void test3()
@@ -168,21 +89,21 @@ void test3()
 	//tree.insert(175);
 	//tree.insert(142);
 
-	tree.insert(100);
-	tree.insert(25);
-	tree.insert(200);
-	tree.insert(150);
+	tree.insert(100, 0.0);
+	tree.insert(25, 0.0);
+	tree.insert(200, 0.0);
+	tree.insert(150, 0.0);
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 
 	tree.erase(150);
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 	tree.erase(100);
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 }
 
 // Конструируем деревья самостоятельно.
@@ -191,7 +112,7 @@ void test4()
 	using dict_t = MyDict<int, double>;
 
 	dict_t dict;
-	dict.insert(10);
+	dict.insert(10, 0.0);
 	dict_t::Node* root = dict.getRootPtr();
 	dict_t::Node* curNode = new dict_t::Node(root, 5);
 	root->setChild(curNode, true);
@@ -226,10 +147,10 @@ void showTree(int seed)
 	std::random_shuffle(vec.begin(), vec.end());
 
 	for (auto& element : vec) {
-		tree.insert(element);
+		tree.insert(element, 0.0);
 	}
 	cout << seed << "\n\n";
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n";
 }
 
@@ -255,15 +176,15 @@ void test5(int seed)
 	std::random_shuffle(vec.begin(), vec.end());
 
 	for (auto& element : vec) {
-		tree.insert(element);
+		tree.insert(element, 0.0);
 	}
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 	tree.erase(13);
 
-	draw_tree_hor(tree.getRootPtr());
+	printAsRBTree(tree.getRootPtr());
 	cout << "\n\n\n\n";
 
 }
@@ -284,12 +205,12 @@ void iteratorTest()
 	dict1.insert(1, 0.0);
 	dict1.insert(70, 0.0);
 
-	draw_tree_hor(dict1.getRootPtr());
+	printAsRBTree(dict1.getRootPtr());
 	cout << "\n\n\n\n";
 
-	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
-		cout << (*it)->m_key << ' ';
-	}
+	//for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+	//	cout << (*it)->m_key << ' ';
+	//}
 	cout << endl;
 
 }
@@ -311,20 +232,20 @@ void deleteDebug()
 	dict1.insert(1, 0.0);
 	dict1.insert(70, 0.0);
 
-	draw_tree_hor(dict1.getRootPtr());
+	printAsRBTree(dict1.getRootPtr());
 	cout << "\n\n\n\n";
 
 	std::vector<int> values;
-	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
-		values.push_back((*it)->m_key);
-		cout << (*it)->m_key << ' ';
-	}
+	//for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+	//	values.push_back((*it)->m_key);
+	//	cout << (*it)->m_key << ' ';
+	//}
 	cout << "\n\n\n\n";
 
 	for (auto& element : values) {
 		cout << "Deleted: " << element << "\n\n";
 		dict1.erase(element);
-		draw_tree_hor(dict1.getRootPtr());
+		printAsRBTree(dict1.getRootPtr());
 		cout << "\n\n";
 	}
 
@@ -343,32 +264,139 @@ void deleteDebug1(int seed)
 	std::random_shuffle(vec.begin(), vec.end());
 
 	for (auto& element : vec) {
-		dict1.insert(element);
+		dict1.insert(element, 0.0);
 	}
 
-	draw_tree_hor(dict1.getRootPtr());
+	printAsRBTree(dict1.getRootPtr());
 	cout << "\n\n\n\n";
 
 	std::vector<int> values;
-	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
-		values.push_back((*it)->m_key);
-		cout << (*it)->m_key << ' ';
-	}
+	//for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+	//	values.push_back((*it)->m_key);
+	//	cout << (*it)->m_key << ' ';
+	//}
 	cout << "\n\n\n\n";
 
 	for (auto& element : values) {
 		cout << "Deleted: " << element << "\n\n";
 		dict1.erase(element);
-		draw_tree_hor(dict1.getRootPtr());
+		printAsRBTree(dict1.getRootPtr());
 		cout << "\n\n";
 	}
 
 	cout << endl;
 }
 
+void iteratorTestmm()
+{
+	MyDict<int, double> dict1;
+	dict1.insert(10, 0.0);
+	dict1.insert(18, 0.0);
+	dict1.insert(7, 0.0);
+	dict1.insert(15, 0.0);
+	dict1.insert(16, 0.0);
+	dict1.insert(30, 0.0);
+	dict1.insert(25, 0.0);
+	dict1.insert(40, 0.0);
+	dict1.insert(60, 0.0);
+	dict1.insert(2, 0.0);
+	dict1.insert(1, 0.0);
+	dict1.insert(70, 0.0);
+
+	printAsRBTree(dict1.getRootPtr());
+	cout << "\n\n\n\n";
+
+}*/
+
+// Тестирование insert и clear.
+void test10()
+{
+	MyDict<std::string, std::string> engRusDict;
+	engRusDict.insert("why", "почему");
+	engRusDict.insert("pair", "пара");
+	engRusDict.insert("pen", "ручка");
+	engRusDict.insert("keyboard", "клавиатура");
+	engRusDict.insert("mouse", "мышь");
+	engRusDict.insert("letter", "буква");
+	engRusDict.insert("sentence", "предложение");
+	engRusDict.insert("camera", "камера");
+	engRusDict.insert("tree", "дерево");
+	engRusDict.insert("road", "дорога");
+	engRusDict.insert("human", "человек");
+
+	for (auto elem : engRusDict) {
+		cout << elem.first << " : " << elem.second << endl;
+	}
+	cout << "\n\n";
+
+	engRusDict.printAsRBTree();
+
+	engRusDict.clear();
+
+	for (auto elem : engRusDict) {
+		cout << elem.first << " : " << elem.second << endl;
+	}
+	cout << "\n\n";
+
+	engRusDict.printAsRBTree();
+}
+
+// Тестирование конструктора копирования и оператора присваивания.
+void test11()
+{
+	MyDict<int, double> dict;
+
+	dict.insert(10, 0.0);
+	dict.insert(18, 0.0);
+	dict.insert(7, 0.0);
+	dict.insert(15, 0.0);
+	dict.insert(16, 0.0);
+	dict.insert(30, 0.0);
+	dict.insert(25, 0.0);
+	dict.insert(40, 0.0);
+	dict.insert(60, 0.0);
+	dict.insert(2, 0.0);
+	dict.insert(1, 0.0);
+	dict.insert(70, 0.0);
+
+	dict.printAsRBTree();
+	cout << "\n\n";
+
+	MyDict<int, double> dictCopy;
+	dictCopy.insert(10, 0);
+	dictCopy.insert(200, 0);
+	dictCopy.insert(-100, 0);
+	cout << "dictCopy:" << endl;
+	dictCopy.printAsRBTree();
+	cout << "\n\n";
+
+	dictCopy = dict;
+
+	dict.clear();
+	cout << "dict:" << endl;
+	dict.printAsRBTree();
+	cout << "\n\n";
+
+	cout << "dictCopy:" << endl;
+	dictCopy.printAsRBTree();
+	cout << "\n\n";
+}
+
+// Тестирование оператора доступа по индексу.
+void test12()
+{
+	MyDict<std::string, std::string> dict;
+	dict.insert("apple", "яблоко");
+	dict.insert("fruit", "фрукт");
+	dict.insert("orange", "апельсин");
+
+	std::string word = "apple";
+	cout << word << " = " << dict[word] << endl;
+}
+
 int main()
 {
-	//test1();
+	/*//test1();
 	//test2();
 	//test3();
 	//showTrees();
@@ -381,6 +409,13 @@ int main()
 
 	//deleteDebug();
 	//deleteDebug1(1000);
+
+	//iteratorTestmm();*/
+
+
+	//test10();
+	//test11();
+	test12();
 
 	return 0;
 }
