@@ -24,19 +24,47 @@ public:
 
 		// Красный по умолчанию.
 		// Потомки - nullptr.
-		Node(Node* parent, keyT key, valT value) : Node(parent)
+		Node(Node* parent, keyT key, valT value=0.0) : Node(parent)
 		{
 			m_key = key;
 			m_value = value;
 		}
 
-		bool isKeyLeft(keyT key)
+
+		// Позаботиться о связи родителя.
+		~Node()
+		{
+			assert(left == nullptr && right == nullptr);
+			if (parent != nullptr) {
+				// Если удаляется не корень.
+				parent->setChild(nullptr, parent->isLeftChild(this));
+			}
+			// Если удаляется корень, заботится о связи родителя не нужно.
+		}
+
+		bool isKeyLeft(keyT key) const
 		{
 			return (key < m_key);
 		}
 
-		bool isLeft()
+		bool isLeftChild(Node* node) const
 		{
+			assert(node == left || node == right);
+			if (node == left) {
+				return true;
+			}
+			
+			return false;
+		}
+
+		bool isLeft() const
+		{
+			// Для корня должно быть возвращено истина.
+			// Только у корня parent == nullptr.
+			if (parent == nullptr) {
+				return true;
+			}
+
 			return parent->isKeyLeft(m_key);
 		}
 
@@ -46,7 +74,17 @@ public:
 			return parent;
 		}
 
+		const Node* getParent() const
+		{
+			return parent;
+		}
+
 		Node* getChild(bool isLeft)
+		{
+			return ((isLeft) ? (left) : (right));
+		}
+
+		const Node* getChild(bool isLeft) const
 		{
 			return ((isLeft) ? (left) : (right));
 		}
@@ -170,11 +208,11 @@ public:
 		Node* targetNode = search(m_root, key);
 		if (targetNode == nullptr) return;
 
-		erase(targetNode);
+		erase(targetNode, key);
 	}
 
 
-	void erase(Node* nodeToDelete)
+	void erase(Node* nodeToDelete, const keyT& deletedKey)
 	{
 		// Необходим переход к узлу без детей.
 
@@ -182,34 +220,15 @@ public:
 
 		//========= В данный момент узел должен быть конечным. =========
 
-		// 1. Узел красный, просто убираем его.
+		// 1. Удаляемый узел красный, просто убираем его.
 		if (nodeToDelete->isRed == true) {
-			nodeToDelete->getParent()->setChild(nullptr, nodeToDelete->isLeft());
+			Node* parent = nodeToDelete->getParent();
 			delete nodeToDelete;
 			return;
 		}
 
-		// 2. Узел черный. Теперь он DB.
-		// DB может изменяться в ходе алгоритма, поэтому нужна отдельная переменная.
-		Node* DB = nodeToDelete;
-
-		// 2.1. DB является корнем. Просто забываем, что это DB.
-		if (DB == m_root) {
-			return;
-		}
-
-
-		// 2.2. Брат узла черный и дети брата тоже черные или nullptr.
-		Node* sibling = DB->getSibling();
-		if ( (sibling->isRed == false) && 
-			( (sibling->getChild(true) == nullptr) || (sibling->getChild(true)->isRed == false) ) &&
-			((sibling->getChild(false) == nullptr) || (sibling->getChild(false)->isRed == false))
-			)
-		{
-			DB->getParent()->isRed == false;
-
-		}
-
+		// 2. Удаляемый узел черный. Теперь он DB.
+		balanceDB(nodeToDelete, deletedKey);
 
 	}
 
@@ -238,6 +257,138 @@ public:
 		return searchParent(nextNode, key, isChildLeft);
 	}
 
+
+	class const_iterator
+	{
+	public:
+		const_iterator(Node* node) : node(node)
+		{
+		}
+
+		const_iterator& operator++()
+		{
+			// Если есть правый ребенок: ищем приемника.
+			// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через левую связь.
+
+			if (node->getChild(false) != nullptr) {
+				// Ищем приемника - наименьший элемент в правом поддереве.
+				// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+				for (const Node* curNode = node->getChild(false); ; curNode = curNode->getChild(true)) {
+
+					// Закончили поиск.
+					if (curNode->getChild(true) == nullptr) {
+						node = curNode;
+						return *this;
+					}
+				}
+			}
+
+			for (const Node* curNode = node; ; curNode = curNode->getParent()) {
+				// Найден узел, у которого переход к родителю будет через левую связь.
+				if (curNode->isLeft()) {
+					// Делаем в последний раз переход и закончили. Причем в node запись.
+					node = curNode->getParent();
+					return *this;
+				}
+			}
+		}
+
+		bool operator==(const_iterator other)
+		{
+			return (node == other.node);
+		}
+
+		bool operator!=(const_iterator other)
+		{
+			return !(*this == other);
+		}
+
+		const Node* operator*()
+		{
+			return node;
+		}
+
+	private:
+
+		const Node* node;
+	};
+
+	class iterator
+	{
+	public:
+		iterator(Node* node) : node(node)
+		{
+		}
+
+		iterator& operator++()
+		{
+			// Если есть правый ребенок: ищем приемника.
+			// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через левую связь.
+
+			if (node->getChild(false) != nullptr) {
+				// Ищем приемника - наименьший элемент в правом поддереве.
+				// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
+				for (Node* curNode = node->getChild(false); ; curNode = curNode->getChild(true)) {
+
+					// Закончили поиск.
+					if (curNode->getChild(true) == nullptr) {
+						node = curNode;
+						return *this;
+					}
+				}
+			}
+
+			for (Node* curNode = node; ; curNode = curNode->getParent()) {
+				// Найден узел, у которого переход к родителю будет через левую связь.
+				if (curNode->isLeft()) {
+					// Делаем в последний раз переход и закончили. Причем в node запись.
+					node = curNode->getParent();
+					return *this;
+				}
+			}
+		}
+
+		bool operator==(iterator other)
+		{
+			return (node == other.node);
+		}
+
+		bool operator!=(iterator other)
+		{
+			return !(*this == other);
+		}
+
+		Node* operator*()
+		{
+			return node;
+		}
+
+	private:
+
+		Node* node;
+	};
+
+	// У словаря нет не констатного итератора.
+	//using iterator = const_iterator;
+
+
+	iterator begin()
+	{
+		// Двигаемся влево пока левый ребенок не nullptr.
+		for (Node* curNode = m_root; ; curNode = curNode->getChild(true)) {
+			// Закончили поиск.
+			if (curNode->getChild(true) == nullptr) {
+				iterator it(curNode);
+				return it;
+			}
+		}
+	}
+
+	iterator end()
+	{
+		iterator it(nullptr);
+		return it;
+	}
 
 private:
 	void balance(Node* inserted)
@@ -295,6 +446,114 @@ private:
 
 		// Перекрашивание. Дед уходит вниз, должен стать красным.
 		grandParent->isRed = true;
+	}
+
+	void balanceDB(Node* DB, const keyT& deletedKey) 
+	{
+		// 2.1. DB является корнем. Просто забываем, что это DB.
+		if (DB == m_root) {
+			// Если удаляемый ключ - корень и он стал DB, значит удаляется 
+			// корень - единственный оставшийся элемент.
+			if (DB->m_key == deletedKey) {
+				delete DB;
+				m_root = nullptr;
+			}
+			return;
+		}
+
+		Node* parent = DB->getParent();
+		Node* sibling = DB->getSibling();
+
+		// 2.2. Брат узла черный и дети брата тоже черные или nullptr.
+		if ((sibling->isRed == false) &&
+			((sibling->getChild(true) == nullptr) || (sibling->getChild(true)->isRed == false)) &&
+			((sibling->getChild(false) == nullptr) || (sibling->getChild(false)->isRed == false))
+			)
+		{
+			// Удаляем узел, который был DB.
+			// Или забываем что это DB, если это не удаляемый ключ.
+			if (DB->m_key == deletedKey) {
+				delete DB;
+			}
+			DB = nullptr;
+
+			if (parent->isRed == false) {
+				// Если родитель был черным, то он становится DB.
+				DB = parent;
+			}
+			else {
+				// Если родитель был красным, то он становится черным.
+				parent->isRed = false;
+			}
+
+			// Брат становится красным.
+			sibling->isRed = true;
+
+			// Если родитель был красным, то закончили.
+			if (DB == nullptr) return;
+
+			// Иначе балансируем новый DB - родителя.
+			return balanceDB(DB, deletedKey);
+		}
+
+
+		// 2.3. Брат узла красный.
+		if (sibling->isRed == true) {
+			// Брат становится черным.
+			sibling->isRed = false;
+			// Родитель становится красным.
+			parent->isRed = true;
+
+			// Вращаем родителя в сторону DB.
+			rotate(parent, DB->isLeft());
+			// Проводим балансировку DB снова.
+			return balanceDB(DB, deletedKey);
+		}
+
+
+		// 2.4. Брат узла черный, но ближний ребенок красный, а дальний ребенок черный.
+		bool wasCase4 = false;
+		Node* closeSiblingChild = sibling->getChild(parent->isLeftChild(DB));
+		Node* farSiblingChild = sibling->getChild( !(parent->isLeftChild(DB)) );
+		if ( (sibling->isRed == false) &&
+			( (closeSiblingChild != nullptr) && (closeSiblingChild->isRed == true) ) &&
+			( (farSiblingChild == nullptr) || (farSiblingChild->isRed == false) )
+			)
+		{
+			wasCase4 = true;
+			// Ближний ребенок становится черным.
+			closeSiblingChild->isRed = false;
+			// Брат становится красным.
+			sibling->isRed = true;
+
+			// Вращение в сторону от DB.
+			rotate(sibling, !(parent->isLeftChild(DB)) );
+		}
+
+
+		if (wasCase4) {
+			sibling = DB->getSibling();
+			farSiblingChild = sibling->getChild( !(parent->isLeftChild(DB)) );
+		}
+
+		// 2.5. Брат узла черный, но дальний ребенок красный.
+		if ((sibling->isRed == false) && 
+			( (farSiblingChild != nullptr) && (farSiblingChild->isRed == true) )
+			)
+		{
+			// Родитель и брат меняются цветами.
+			std::swap(parent->isRed, sibling->isRed);
+			// Вращаем родителя в сторону DB.
+			rotate(parent, parent->isLeftChild(DB));
+			// DB отдает черный цвет дальнему ребенку, который красный.
+			farSiblingChild->isRed = false;
+
+			// Удаляем узел, который был DB.
+			// Или забываем что это DB, если это не удаляемый ключ.
+			if (DB->m_key == deletedKey) {
+				delete DB;
+			}
+		}
 	}
 
 
@@ -372,6 +631,7 @@ private:
 	}
 
 
-	// Корень дерева.
+	// Корень дерева. isLeft() должная возвращать истину
+	// для корректной работы итератора.
 	Node* m_root;
 };

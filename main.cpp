@@ -93,13 +93,13 @@ void draw_tree_hor(MyDict<int, double>::Node* tree)
 	draw_tree_hor2(tree, 0, path, 0, hConsole);
 }
 
-
 void test1()
 {
-	srand(static_cast<unsigned int>(time(0)));
+	//static_cast<unsigned int>(time(0))
+	srand(200);
 	MyDict<int, double> tree;
 
-	std::vector<int> vec(100);
+	std::vector<int> vec(20);
 	for (size_t i = 0; i < vec.size(); i++) {
 		vec[i] = i;
 	}
@@ -107,12 +107,18 @@ void test1()
 
 	for (auto& element : vec) {
 		cout << element << ' ';
-		tree.insert(element, 0.0);
+		tree.insert(element);
 	}
 	cout << endl;
 
 	draw_tree_hor(tree.getRootPtr());
-	cout << endl;
+	cout << "\n\n\n\n";
+
+	tree.erase(10);
+
+	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n\n\n";
+
 }
 
 void test2()
@@ -173,14 +179,208 @@ void test3()
 
 	tree.erase(150);
 	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n\n\n";
+
 	tree.erase(100);
+	draw_tree_hor(tree.getRootPtr());
+}
+
+// Конструируем деревья самостоятельно.
+void test4()
+{
+	using dict_t = MyDict<int, double>;
+
+	dict_t dict;
+	dict.insert(10);
+	dict_t::Node* root = dict.getRootPtr();
+	dict_t::Node* curNode = new dict_t::Node(root, 5);
+	root->setChild(curNode, true);
+
+
+	curNode = new dict_t::Node(root, 1);
+	root->setChild(curNode, false);
+
+	curNode = new dict_t::Node(root, 20);
+	root->setChild(curNode, false);
+
+	curNode = new dict_t::Node(root, 20);
+	root->setChild(curNode, false);
+
+	curNode = new dict_t::Node(root, 20);
+	root->setChild(curNode, false);
+
+	curNode = new dict_t::Node(root, 20);
+	root->setChild(curNode, false);
+}
+
+
+void showTree(int seed)
+{
+	srand(seed);
+	MyDict<int, double> tree;
+
+	std::vector<int> vec(20);
+	for (size_t i = 0; i < vec.size(); i++) {
+		vec[i] = i;
+	}
+	std::random_shuffle(vec.begin(), vec.end());
+
+	for (auto& element : vec) {
+		tree.insert(element);
+	}
+	cout << seed << "\n\n";
+	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n";
+}
+
+void showTrees()
+{
+	const int bias = 1000;
+	for (int seed = 0; seed < 5; seed++) {
+		showTree(seed + bias);
+		cout << endl;
+	}
+}
+
+void test5(int seed)
+{
+	//static_cast<unsigned int>(time(0))
+	srand(seed);
+	MyDict<int, double> tree;
+
+	std::vector<int> vec(20);
+	for (size_t i = 0; i < vec.size(); i++) {
+		vec[i] = i;
+	}
+	std::random_shuffle(vec.begin(), vec.end());
+
+	for (auto& element : vec) {
+		tree.insert(element);
+	}
+
+	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n\n\n";
+
+	tree.erase(13);
+
+	draw_tree_hor(tree.getRootPtr());
+	cout << "\n\n\n\n";
+
+}
+
+void iteratorTest()
+{
+	MyDict<int, double> dict1;
+	dict1.insert(10, 0.0);
+	dict1.insert(18, 0.0);
+	dict1.insert(7, 0.0);
+	dict1.insert(15, 0.0);
+	dict1.insert(16, 0.0);
+	dict1.insert(30, 0.0);
+	dict1.insert(25, 0.0);
+	dict1.insert(40, 0.0);
+	dict1.insert(60, 0.0);
+	dict1.insert(2, 0.0);
+	dict1.insert(1, 0.0);
+	dict1.insert(70, 0.0);
+
+	draw_tree_hor(dict1.getRootPtr());
+	cout << "\n\n\n\n";
+
+	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+		cout << (*it)->m_key << ' ';
+	}
+	cout << endl;
+
+}
+
+void deleteDebug()
+{
+	using dict_t = MyDict<int, double>;
+	dict_t dict1;
+	dict1.insert(10, 0.0);
+	dict1.insert(18, 0.0);
+	dict1.insert(7, 0.0);
+	dict1.insert(15, 0.0);
+	dict1.insert(16, 0.0);
+	dict1.insert(30, 0.0);
+	dict1.insert(25, 0.0);
+	dict1.insert(40, 0.0);
+	dict1.insert(60, 0.0);
+	dict1.insert(2, 0.0);
+	dict1.insert(1, 0.0);
+	dict1.insert(70, 0.0);
+
+	draw_tree_hor(dict1.getRootPtr());
+	cout << "\n\n\n\n";
+
+	std::vector<int> values;
+	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+		values.push_back((*it)->m_key);
+		cout << (*it)->m_key << ' ';
+	}
+	cout << "\n\n\n\n";
+
+	for (auto& element : values) {
+		cout << "Deleted: " << element << "\n\n";
+		dict1.erase(element);
+		draw_tree_hor(dict1.getRootPtr());
+		cout << "\n\n";
+	}
+
+	cout << endl;
+}
+
+void deleteDebug1(int seed)
+{
+	srand(seed);
+	using dict_t = MyDict<int, double>;
+	dict_t dict1;
+	std::vector<int> vec(20);
+	for (size_t i = 0; i < vec.size(); i++) {
+		vec[i] = i;
+	}
+	std::random_shuffle(vec.begin(), vec.end());
+
+	for (auto& element : vec) {
+		dict1.insert(element);
+	}
+
+	draw_tree_hor(dict1.getRootPtr());
+	cout << "\n\n\n\n";
+
+	std::vector<int> values;
+	for (auto it = dict1.begin(); it != dict1.end(); ++it) {
+		values.push_back((*it)->m_key);
+		cout << (*it)->m_key << ' ';
+	}
+	cout << "\n\n\n\n";
+
+	for (auto& element : values) {
+		cout << "Deleted: " << element << "\n\n";
+		dict1.erase(element);
+		draw_tree_hor(dict1.getRootPtr());
+		cout << "\n\n";
+	}
+
+	cout << endl;
 }
 
 int main()
 {
 	//test1();
 	//test2();
-	test3();
+	//test3();
+	//showTrees();
+
+	//showTree(1000);
+
+	//test5(1000);
+
+	//iteratorTest();
+
+	//deleteDebug();
+	//deleteDebug1(1000);
 
 	return 0;
 }
