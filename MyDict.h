@@ -397,61 +397,6 @@ public:
 		const Node* node;
 	};
 
-	//class iterator
-	//{
-	//public:
-	//	iterator(Node* node) : node(node)
-	//	{
-	//	}
-	//
-	//	iterator& operator++()
-	//	{
-	//		// Если есть правый ребенок: ищем приемника.
-	//		// Иначе: поднимаемся по дереву пока подъем не будет осуществлен через левую связь.
-	//
-	//		if (node->getChild(false) != nullptr) {
-	//			// Ищем приемника - наименьший элемент в правом поддереве.
-	//			// Начинаем с правого ребенка. Идем влево пока левый узел не станет nullptr.
-	//			for (Node* curNode = node->getChild(false); ; curNode = curNode->getChild(true)) {
-	//
-	//				// Закончили поиск.
-	//				if (curNode->getChild(true) == nullptr) {
-	//					node = curNode;
-	//					return *this;
-	//				}
-	//			}
-	//		}
-	//
-	//		for (Node* curNode = node; ; curNode = curNode->getParent()) {
-	//			// Найден узел, у которого переход к родителю будет через левую связь.
-	//			if (curNode->isLeft()) {
-	//				// Делаем в последний раз переход и закончили. Причем в node запись.
-	//				node = curNode->getParent();
-	//				return *this;
-	//			}
-	//		}
-	//	}
-	//
-	//	bool operator==(iterator other)
-	//	{
-	//		return (node == other.node);
-	//	}
-	//
-	//	bool operator!=(iterator other)
-	//	{
-	//		return !(*this == other);
-	//	}
-	//
-	//	Node* operator*()
-	//	{
-	//		return node;
-	//	}
-	//
-	//private:
-	//
-	//	Node* node;
-	//};
-
 	// Возвращает итератор на первый элемент.
 	// Первый элемент - это наименьший по ключу элемент.
 	iterator begin()

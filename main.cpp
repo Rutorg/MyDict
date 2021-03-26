@@ -12,7 +12,7 @@ using std::cout;
 using std::cin;
 using std::endl;
 
-
+// Прошлые тесты.
 
 /*void test1()
 {
@@ -308,7 +308,7 @@ void iteratorTestmm()
 
 }*/
 
-// Тестирование insert и clear.
+// Тестирование insert.
 void test10()
 {
 	MyDict<std::string, std::string> engRusDict;
@@ -332,7 +332,7 @@ void test10()
 	engRusDict.printAsRBTree();
 }
 
-// Тестирование конструктора копирования и оператора присваивания.
+// Тестирование оператора присваивания.
 void test11()
 {
 	MyDict<int, double> dict;
@@ -350,6 +350,7 @@ void test11()
 	dict.insert(1, 0.0);
 	dict.insert(70, 0.0);
 
+	cout << "dict:" << endl;
 	dict.printAsRBTree();
 	cout << "\n\n";
 
@@ -357,7 +358,7 @@ void test11()
 	dictCopy.insert(10, 0);
 	dictCopy.insert(200, 0);
 	dictCopy.insert(-100, 0);
-	cout << "dictCopy:" << endl;
+	cout << "dictCopy(not yet):" << endl;
 	dictCopy.printAsRBTree();
 	cout << "\n\n";
 
@@ -431,8 +432,9 @@ int main()
 
 
 	//test10();
-	test13();
+	test11();
 	//test12();
+	//test13();
 
 	return 0;
 }
