@@ -332,8 +332,90 @@ void test10()
 	engRusDict.printAsRBTree();
 }
 
+// Тестирования удаления.
+void testDel()
+{
+	MyDict<std::string, std::string> engRusDict;
+	engRusDict.insert("why", "почему");
+	engRusDict.insert("pair", "пара");
+	engRusDict.insert("pen", "ручка");
+	engRusDict.insert("keyboard", "клавиатура");
+	engRusDict.insert("mouse", "мышь");
+	engRusDict.insert("letter", "буква");
+	engRusDict.insert("sentence", "предложение");
+	engRusDict.insert("camera", "камера");
+	engRusDict.insert("tree", "дерево");
+	engRusDict.insert("road", "дорога");
+	engRusDict.insert("human", "человек");
+
+	engRusDict.erase("tree");
+
+	for (auto elem : engRusDict) {
+		cout << elem.first << " : " << elem.second << endl;
+	}
+	cout << "\n\n";
+
+	engRusDict.printAsRBTree();
+	cout << "\n\n";
+
+	engRusDict.erase("sentence");
+	engRusDict.printAsRBTree();
+}
+
+// Тестирование оператора доступа по индексу.
+void test12()
+{
+	MyDict<std::string, std::string> dict;
+	dict.insert("apple", "яблоко");
+	dict.insert("fruit", "фрукт");
+	dict.insert("orange", "апельсин");
+
+	std::string word = "apple";
+	cout << word << " = " << dict[word] << endl;
+}
+
+// Тестирование конструктора копирования и clear.
+void test13()
+{
+	MyDict<int, double> dict;
+
+	dict.insert(10, 0.0);
+	dict.insert(18, 0.0);
+	dict.insert(7, 0.0);
+	dict.insert(15, 0.0);
+	dict.insert(16, 0.0);
+	dict.insert(30, 0.0);
+	dict.insert(25, 0.0);
+	dict.insert(40, 0.0);
+	dict.insert(60, 0.0);
+	dict.insert(2, 0.0);
+	dict.insert(1, 0.0);
+	dict.insert(70, 0.0);
+
+	cout << "dict:" << endl;
+	dict.printAsRBTree();
+	cout << "\n\n";
+
+	MyDict<int, double> dictCopy = dict;
+	dictCopy.insert(10, 0);
+	dictCopy.insert(200, 0);
+	dictCopy.insert(-100, 0);
+	cout << "dictCopy:" << endl;
+	dictCopy.printAsRBTree();
+	cout << "\n\n";
+
+	dict.clear();
+	cout << "dict:" << endl;
+	dict.printAsRBTree();
+	cout << "\n\n";
+
+	cout << "dictCopy:" << endl;
+	dictCopy.printAsRBTree();
+	cout << "\n\n";
+}
+
 // Тестирование оператора присваивания.
-void test11()
+void test14()
 {
 	MyDict<int, double> dict;
 
@@ -374,43 +456,7 @@ void test11()
 	cout << "\n\n";
 }
 
-// Тестирование оператора доступа по индексу.
-void test12()
-{
-	MyDict<std::string, std::string> dict;
-	dict.insert("apple", "яблоко");
-	dict.insert("fruit", "фрукт");
-	dict.insert("orange", "апельсин");
 
-	std::string word = "apple";
-	cout << word << " = " << dict[word] << endl;
-}
-
-// Тестирования удаления.
-void test13()
-{
-	MyDict<std::string, std::string> engRusDict;
-	engRusDict.insert("why", "почему");
-	engRusDict.insert("pair", "пара");
-	engRusDict.insert("pen", "ручка");
-	engRusDict.insert("keyboard", "клавиатура");
-	engRusDict.insert("mouse", "мышь");
-	engRusDict.insert("letter", "буква");
-	engRusDict.insert("sentence", "предложение");
-	engRusDict.insert("camera", "камера");
-	engRusDict.insert("tree", "дерево");
-	engRusDict.insert("road", "дорога");
-	engRusDict.insert("human", "человек");
-
-	engRusDict.erase("tree");
-
-	for (auto elem : engRusDict) {
-		cout << elem.first << " : " << elem.second << endl;
-	}
-	cout << "\n\n";
-
-	engRusDict.printAsRBTree();
-}
 
 int main()
 {
@@ -432,9 +478,10 @@ int main()
 
 
 	//test10();
-	test11();
+	testDel();
 	//test12();
 	//test13();
+	//test14();
 
 	return 0;
 }
