@@ -330,15 +330,6 @@ void test10()
 	cout << "\n\n";
 
 	engRusDict.printAsRBTree();
-
-	engRusDict.clear();
-
-	for (auto elem : engRusDict) {
-		cout << elem.first << " : " << elem.second << endl;
-	}
-	cout << "\n\n";
-
-	engRusDict.printAsRBTree();
 }
 
 // Тестирование конструктора копирования и оператора присваивания.
@@ -394,6 +385,32 @@ void test12()
 	cout << word << " = " << dict[word] << endl;
 }
 
+// Тестирования удаления.
+void test13()
+{
+	MyDict<std::string, std::string> engRusDict;
+	engRusDict.insert("why", "почему");
+	engRusDict.insert("pair", "пара");
+	engRusDict.insert("pen", "ручка");
+	engRusDict.insert("keyboard", "клавиатура");
+	engRusDict.insert("mouse", "мышь");
+	engRusDict.insert("letter", "буква");
+	engRusDict.insert("sentence", "предложение");
+	engRusDict.insert("camera", "камера");
+	engRusDict.insert("tree", "дерево");
+	engRusDict.insert("road", "дорога");
+	engRusDict.insert("human", "человек");
+
+	engRusDict.erase("tree");
+
+	for (auto elem : engRusDict) {
+		cout << elem.first << " : " << elem.second << endl;
+	}
+	cout << "\n\n";
+
+	engRusDict.printAsRBTree();
+}
+
 int main()
 {
 	/*//test1();
@@ -414,8 +431,8 @@ int main()
 
 
 	//test10();
-	//test11();
-	test12();
+	test13();
+	//test12();
 
 	return 0;
 }

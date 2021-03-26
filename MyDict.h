@@ -1,14 +1,18 @@
 #pragma once
 #include <assert.h>
 
+// keyT - тип ключа.
+// valT - тип значения.
 template <typename keyT, typename valT>
 class MyDict
 {
 public:
 	class const_iterator;
-	// У словаря нет не констатного итератора.
+	// У словаря нет не констатного итератора. Сделаем alias.
 	using iterator = const_iterator;
 
+	// Единственный способ устанавливать связи (parent, left, right)
+	// использовать функцию setChild, либо конструктором (но только parent).
 	class Node
 	{
 	public:
@@ -27,12 +31,15 @@ public:
 
 		// Красный по умолчанию.
 		// Потомки - nullptr.
-		Node(Node* parent, keyT key, valT value) : Node(parent)
+		// Делегирование конструкторов.
+		Node(Node* parent, keyT key, valT value) : Node(parent) 
 		{
 			m_key = key;
 			m_value = value;
 		}
 
+		// Конструктор копирования.
+		// Копирует все поля other, кроме указателей.
 		Node(const Node& other)
 		{
 			// Копируем значения.
@@ -46,22 +53,29 @@ public:
 			right = nullptr;
 		}
 
-		// Позаботиться о связи родителя.
+		// Деструктор.
+		// Должен позаботиьтся о разрыве связи родителя с ребенком.
 		~Node()
 		{
+			// Удаляется может только конечный узел.
 			assert(left == nullptr && right == nullptr);
+
+			// Если удаляется не корень.
 			if (parent != nullptr) {
-				// Если удаляется не корень.
 				parent->setChild(nullptr, parent->isLeftChild(this));
 			}
-			// Если удаляется корень, заботится о связи родителя не нужно.
+			// Если удаляется корень, заботится о связи родителя не нужно
+			// т. к. родитель - nullptr.
 		}
 
+		// Является ли key - левым значением?
 		bool isKeyLeft(keyT key) const
 		{
 			return (key < m_key);
 		}
 
+		// Является ли node - левым ребенком?
+		// Можно использовать только на прямом потомке.
 		bool isLeftChild(Node* node) const
 		{
 			assert(node == left || node == right);
@@ -72,6 +86,7 @@ public:
 			return false;
 		}
 
+		// Является ли данный узел левым?
 		bool isLeft() const
 		{
 			// Только у корня parent == nullptr.
@@ -83,7 +98,13 @@ public:
 			return parent->isKeyLeft(m_key);
 		}
 
+		// Является ли данный узел конечным?
+		bool isLeaf() const
+		{
+			return ( (left == nullptr) && (right == nullptr) );
+		}
 
+		// Получить указатель на родителя.
 		Node* getParent()
 		{
 			return parent;
@@ -94,6 +115,7 @@ public:
 			return parent;
 		}
 
+		// Получить указатель на ребенка.
 		Node* getChild(bool isLeft)
 		{
 			return ((isLeft) ? (left) : (right));
@@ -104,26 +126,30 @@ public:
 			return ((isLeft) ? (left) : (right));
 		}
 
+		// Получить указатель на брата.
 		Node* getSibling()
 		{
 			return parent->getChild(!isLeft());
 		}
 
+		// Получить указатель на дядю.
 		Node* getUncle()
 		{
 			return parent->getSibling();
 		}
 
-
+		// Установить ребенка. Заботится о связях как ребенка,
+		// так и родителя.
 		void setChild(Node* newChild, bool isNewChildLeft)
 		{
-			((isNewChildLeft) ? (left) : (right)) = newChild;
+			( (isNewChildLeft) ? (left) : (right) ) = newChild;
 			if (newChild != nullptr) {
 				newChild->parent = this;
 			}
 		}
 
-
+		// Сделать корневым узлом.
+		// treeRoot - указатель на корень.
 		void makeRoot(Node*& treeRoot)
 		{
 			treeRoot = this;
@@ -131,7 +157,8 @@ public:
 			isRed = false;
 		}
 
-
+		// Дебаг функция. Удостоверяется в правильности связей
+		// у данного узла со своими указателями.
 		void assertRelations()
 		{
 			if (this == nullptr) return;
@@ -172,7 +199,7 @@ public:
 	// Конструктор копирования.
 	MyDict(const MyDict& other)
 	{
-		// Копируем все характеристики, кроме связей.
+		// Копируем корень. Копируем все характеристики, кроме связей.
 		m_root = new Node(*(other.m_root));
 
 		// Обрабатываем левого ребенка.
@@ -233,6 +260,8 @@ public:
 		m_root = nullptr;
 	}
 	
+	// Вставить.
+	// Дерево будет сбалансированно автоматически.
 	void insert(keyT key, valT value)
 	{
 		if (m_root == nullptr) {
@@ -247,9 +276,11 @@ public:
 		Node* insertingNode = new Node(parentNode, key, value);
 		parentNode->setChild(insertingNode, isInsertedLeft);
 
-		balance(insertingNode);
+		balanceRedRed(insertingNode);
 	}
 
+	// Удалить.
+	// Дерево будет сбалансированно автоматически.
 	void erase(keyT key)
 	{
 		// 3 функции:
@@ -262,12 +293,19 @@ public:
 		erase(targetNode, key);
 	}
 
+	// Найти.
+	// Если будет найден узел с таким элементом, то
+	// будет возвращен итератор на этот элемент, иначе
+	// будет возвращен end().
 	iterator find(keyT key)
 	{
 		Node* node = search(m_root, key);
 		return iterator(node);
 	}
 
+	// Оператор доступа по индексу.
+	// Можно вызывать только для существующего ключа!!!
+	// В данной реализации запрещено изменение через данный оператор.
 	const valT& operator[](keyT key)
 	{
 		iterator it = find(key);
@@ -275,18 +313,6 @@ public:
 
 		return it.node->m_value;
 	}
-
-	// Возвращает указатель на узел с m_value. Если nullptr, то значит нет такого узла.
-	Node* search(Node* startNode, keyT key)
-	{
-		// Текущий узел - искомый.
-		if (startNode == nullptr || startNode->m_key == key) {
-			return startNode;
-		}
-
-		return search( startNode->getChild(startNode->isKeyLeft(key)), key);
-	}
-
 
 	class const_iterator
 	{
@@ -426,6 +452,8 @@ public:
 	//	Node* node;
 	//};
 
+	// Возвращает итератор на первый элемент.
+	// Первый элемент - это наименьший по ключу элемент.
 	iterator begin()
 	{
 		if (m_root == nullptr)
@@ -444,7 +472,8 @@ public:
 		}
 	}
 
-
+	// Возвращает итератор на первый после последнего.
+	// В данной реализации итератор указывающий на nullptr.
 	iterator end()
 	{
 		iterator it(nullptr);
@@ -523,12 +552,14 @@ private:
 		draw_tree_hor2(tree->getChild(true), depth, path, 0, hConsole);
 	}
 
+	// Метод рекурсивной очистки.
 	void recClean(Node* root) {
 		if (root->getChild(true) != nullptr) recClean(root->getChild(true));
 		if (root->getChild(false) != nullptr) recClean(root->getChild(false));
 		delete root;
 	}
 
+	// Метод рекурсивного копирования.
 	void recCopy(Node* parent, const Node* otherParent, bool isLeftChild)
 	{
 		// ==== Копируем ребенка. ====
@@ -549,6 +580,7 @@ private:
 		recCopy(child, otherChild, false);
 	}
 
+	// Метод удаления по узлу
 	void erase(Node* nodeToDelete, const keyT& deletedKey)
 	{
 		// Необходим переход к узлу без детей.
@@ -564,10 +596,22 @@ private:
 		}
 
 		// 2. Удаляемый узел черный. Теперь он DB.
-		balanceDB(nodeToDelete, deletedKey);
-
+		balanceDB(nodeToDelete);
 	}
 
+	// Возвращает указатель на узел с ключем key. Если nullptr, то значит нет такого узла.
+	Node* search(Node* startNode, keyT key)
+	{
+		// Текущий узел - искомый.
+		if (startNode == nullptr || startNode->m_key == key) {
+			return startNode;
+		}
+
+		return search(startNode->getChild(startNode->isKeyLeft(key)), key);
+	}
+
+	// Ищет родительский узел узла с ключем key.
+	// isChildLeft - будет указывать на то, является ли ребенок с key левым.
 	Node* searchParent(Node* startNode, keyT key, bool& isChildLeft)
 	{
 		isChildLeft = startNode->isKeyLeft(key);
@@ -582,7 +626,8 @@ private:
 		return searchParent(nextNode, key, isChildLeft);
 	}
 
-	void balance(Node* inserted)
+	// Метод балансировки двух красных узлов.
+	void balanceRedRed(Node* inserted)
 	{
 		assert(inserted != m_root);
 
@@ -612,7 +657,7 @@ private:
 
 			// иначе перекрашиваем его и проводим балансировку для него и закончили.
 			grandParent->isRed = true;
-			balance(grandParent);
+			balanceRedRed(grandParent);
 			return;
 		}
 
@@ -639,6 +684,7 @@ private:
 		grandParent->isRed = true;
 	}
 
+	// Метод для BST удаления. Т. е. для перехода к конечному узлу при помощи замен.
 	Node* BSTDeletion(Node* nodeToDelete) 
 	{
 		// Переход к узлу без детей.
@@ -682,13 +728,14 @@ private:
 		return BSTDeletion(children);
 	}
 
-	void balanceDB(Node* DB, const keyT& deletedKey) 
+	// Метод балансировки двойного черного узла.
+	void balanceDB(Node* DB) 
 	{
 		// 2.1. DB является корнем. Просто забываем, что это DB.
 		if (DB == m_root) {
 			// Если удаляемый ключ - корень и он стал DB, значит удаляется 
 			// корень - единственный оставшийся элемент.
-			if (DB->m_key == deletedKey) {
+			if (DB->isLeaf()) {
 				delete DB;
 				m_root = nullptr;
 			}
@@ -706,7 +753,7 @@ private:
 		{
 			// Удаляем узел, который был DB.
 			// Или забываем что это DB, если это не удаляемый ключ.
-			if (DB->m_key == deletedKey) {
+			if (DB->isLeaf()) {
 				delete DB;
 			}
 			DB = nullptr;
@@ -727,7 +774,7 @@ private:
 			if (DB == nullptr) return;
 
 			// Иначе балансируем новый DB - родителя.
-			return balanceDB(DB, deletedKey);
+			return balanceDB(DB);
 		}
 
 
@@ -741,7 +788,7 @@ private:
 			// Вращаем родителя в сторону DB.
 			rotate(parent, DB->isLeft());
 			// Проводим балансировку DB снова.
-			return balanceDB(DB, deletedKey);
+			return balanceDB(DB);
 		}
 
 
@@ -783,13 +830,13 @@ private:
 			farSiblingChild->isRed = false;
 
 			// Удаляем узел, который был DB.
-			// Или забываем что это DB, если это не удаляемый ключ.
-			if (DB->m_key == deletedKey) {
+			if (DB->isLeaf()) {
 				delete DB;
 			}
 		}
 	}
 
+	// Вращение узла.
 	// Занимается всеми связями (parent, left, right).
 	void rotate(Node* rotatedNode, bool isLeftRotation) 
 	{
